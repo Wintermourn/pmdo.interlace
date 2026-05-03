@@ -455,7 +455,7 @@ end
 ---@param identifier string
 ---@return boolean
 function _tag:contains(identifier)
-    return self.values.by_value[identifier] > 0
+    return self.values.by_value[identifier] ~= nil
 end
 
 ---@return string, integer
