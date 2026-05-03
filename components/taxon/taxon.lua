@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.1
+local TAXONVERSION = 0.2
 
 local IO = luanet.namespace 'System.IO'
 
@@ -395,11 +395,37 @@ function _tag:__tostring()
     return ('Taxon.Tag <%s> (%s) :: %d Entries'):format(self.key, self.type, #self.values.by_index)
 end
 
+function _tag:__len()
+    return #self.values.by_index
+end
+
 ---@return string
 function _tag:get_random_identifier()
     if #self.values.by_index == 0 then return nil end
     local rng = math.random(1, #self.values.by_index)
     return self.values.by_index[rng]
+end
+
+---@return string, integer
+function _tag:get_random_form()
+    if self.type ~= 'Monster' then return end
+    local id = self:get_random_identifier()
+    local sindex = id:find '/' or 2
+    return id:sub(1, sindex - 1), math.floor(tonumber(id:sub(sindex + 1)) or 0)
+end
+
+---@return string
+function _tag:get(index)
+    return self.values.by_index[index]
+end
+
+---@return string, integer
+function _tag:get_form(index)
+    if self.type ~= 'Monster' then return end
+    local id = self.values.by_index[index] --[[@as string]]
+    if not id then return end
+    local sindex = id:find '/' or 2
+    return id:sub(1, sindex - 1), math.floor(tonumber(id:sub(sindex + 1)) or 0)
 end
 
 function _tag:iterate_keys()
