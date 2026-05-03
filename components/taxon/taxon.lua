@@ -552,7 +552,7 @@ local function load_tag_files(path, base_path, tag_cache, type, scan_cache)
                 for token in luanet.each(vals) do
                     if token.Type == __JTokenType.String then
                         v = token:ToString()
-                        if not o.by_value[v] and not o.removed_values[v] then
+                        if not o.by_value[v] and not o.removed_values[v] and _DATA.DataIndices[__DataType[type]]:ContainsKey(v) then
                             table.insert(o.by_index, v)
                             o.by_value[v] = #o.by_index
                         end
