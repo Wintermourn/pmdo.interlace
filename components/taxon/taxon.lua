@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.2
+local TAXONVERSION = 0.3
 
 local IO = luanet.namespace 'System.IO'
 
@@ -103,6 +103,7 @@ local __Json_Linq = import ("Newtonsoft.Json", "Newtonsoft.Json.Linq")
 local __Json = import ("Newtonsoft.Json", "Newtonsoft.Json")
     local __Formatting = __Json.Formatting
 
+local __Type = import_type 'System.Type'
 local type_Int64 = ctype(import_type 'System.Int64')
 local type_Double = ctype(import_type 'System.Double')
 local type_Boolean = ctype(import_type 'System.Boolean')
@@ -219,6 +220,38 @@ taxon.scan_methods['string.contains'] = function (data, scan_info)
     if type(data) ~= 'string' then return false end
     local suffix = scan_info.value
     return data:find(suffix)
+end
+
+local type_List = import_type 'System.Type' .GetType 'System.Collections.Generic.List`1'
+taxon.scan_methods['contains'] = function (data, scan_info)
+    local val = scan_info.class
+    if type(data) == 'userdata' then
+        local ty = data:GetType()
+        if not ty then return false end
+        if ty.IsArray then
+            if data.Length == 0 then return false end
+            if val then
+                if type(data[0]) ~= 'userdata' then return false end -- todo
+                if type(val) == 'string' then
+                    print 'c'
+                    for entry in luanet.each(data) do
+                        ty = entry:GetType()
+                        if ty == __Type.GetType(val) then return true end
+                    end
+                end
+            end
+        elseif ty.IsGenericType and ty:GetGenericTypeDefinition() == type_List then
+            if data.Count == 0 then return false end
+            if val then
+                if type(data[0]) ~= 'userdata' then return false end -- todo
+                if type(val) ~= 'string' then return false end
+                for i = 0, data.Count - 1 do
+                    ty = data[i]:GetType()
+                    if ty == __Type.GetType(val) then return true end
+                end
+            end
+        end
+    end
 end
 
 local scan_object_cache = {}

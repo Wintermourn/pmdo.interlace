@@ -1,0 +1,17 @@
+{
+    "scans": [
+        {
+            "Summary.Name.DefaultText": {
+                "type": "string.starts_with",
+                "value": "TM "
+            }
+        },
+        {
+            "Object.SortCategory": 13,
+            "Object.GroundUseActions": {
+                "type": "contains",
+                "class": "RogueEssence.Ground.LearnItemEvent, RogueEssence"
+            }
+        }
+    ]
+}

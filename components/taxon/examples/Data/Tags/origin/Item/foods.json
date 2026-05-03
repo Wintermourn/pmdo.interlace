@@ -1,0 +1,16 @@
+{
+    "values": [
+        "food_grimy",
+        "food_apple",
+        "food_apple_big",
+        "food_apple_huge",
+        "food_apple_golden",
+        "food_apple_perfect",
+        "food_banana",
+        "food_banana_big",
+        "food_banana_golden"
+    ],
+    "remove_values": [
+        "food_grimy"
+    ]
+}
