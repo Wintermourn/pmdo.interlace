@@ -590,8 +590,8 @@ function carcass.rebuild(force)
 
     local verFile = IO.Path.Combine(cacheDir, 'version')
     local currentVersion = RogueEssence.Versioning.GetVersion():ToString()
-    local versionInfo = IO.File.ReadAllLines(verFile)
-    if not IO.File.Exists(verFile) or versionInfo[0] ~= currentVersion then
+    local versionInfo = IO.File.Exists(verFile) and IO.File.ReadAllLines(verFile)
+    if not versionInfo or versionInfo[0] ~= currentVersion then
         for file in luanet.each(IO.Directory.GetFiles(cacheDir)) do
             IO.File.Delete(file)
         end
