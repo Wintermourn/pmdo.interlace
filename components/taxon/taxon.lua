@@ -487,8 +487,8 @@ local function get_category_hash(category)
 
     local qns = RogueEssence.PathMod.Quest.Namespace ~= '' and RogueEssence.PathMod.Quest.Namespace
     local basePath = IO.Path.Combine(RogueEssence.PathMod.APP_PATH, '%s', 'Data', category)
-    local baseTagPath = IO.Path.Combine(RogueEssence.PathMod.APP_PATH, '%s', 'Data', 'Tags', 'origin')
-    local questTagPath = IO.Path.Combine(RogueEssence.PathMod.APP_PATH, '%s', 'Data', 'Tags', qns or 'origin')
+    local baseTagPath = IO.Path.Combine(RogueEssence.PathMod.APP_PATH, '%s', 'Data', 'Tags', 'origin', category)
+    local questTagPath = IO.Path.Combine(RogueEssence.PathMod.APP_PATH, '%s', 'Data', 'Tags', qns or 'origin', category)
 
     for mod in luanet.each(RogueEssence.PathMod.GetEligibleMods(RogueEssence.PathMod.ModType.Mod)) do
         local modData, modTagBasePath, modTagQuestPath = basePath:format(mod.Path), baseTagPath:format(mod.Path), questTagPath:format(mod.Path)
