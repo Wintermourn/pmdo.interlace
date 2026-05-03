@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.31
+local TAXONVERSION = 0.32
 
 local IO = luanet.namespace 'System.IO'
 
@@ -450,6 +450,12 @@ end
 ---@return string
 function _tag:get(index)
     return self.values.by_index[index]
+end
+
+---@param identifier string
+---@return boolean
+function _tag:contains(identifier)
+    return self.values.by_value[identifier] > 0
 end
 
 ---@return string, integer
