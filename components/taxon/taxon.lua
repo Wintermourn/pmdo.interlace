@@ -3,7 +3,7 @@ local TAXONVERSION = 0.32
 
 local IO = luanet.namespace 'System.IO'
 
----@alias wintermourn.taxon.DataType
+---@alias Taxon.DataType
 ---| 'AI'
 ---| 'Item'
 ---| 'Monster'
@@ -11,8 +11,8 @@ local IO = luanet.namespace 'System.IO'
 ---| 'Intrinsic'
 ---| 'Zone'
 
----@class (partial) wintermourn.interlace.Carcass
----@field get_tag fun(data_type: wintermourn.taxon.DataType, tag_name: string): wintermourn.taxon.Tag
+---@class (partial) interlace.Carcass
+---@field get_tag fun(data_type: Taxon.DataType, tag_name: string): Taxon.Tag
 
 if not _G.wintermourn or not _G.wintermourn.interlace then
     _G.wintermourn = _G.wintermourn or {}
@@ -44,7 +44,7 @@ if taxon and taxon._VERSION >= TAXONVERSION then
         __newindex = function(_self, idx, _v)
             print(string.format ("attempt to insert index %s into taxon shell", idx))
         end
-    }) --[[@as wintermourn.taxon.Carcass]]
+    }) --[[@as Taxon.Carcass]]
 end
 
 local data_categories = {
@@ -56,7 +56,7 @@ local data_categories = {
     {'Zone', _DATA.GetZone}
 }
 
----@class wintermourn.taxon.Carcass
+---@class Taxon.Carcass
 local carcass, bubbleup = {}, {}
 if taxon then
     taxon._VERSION = TAXONVERSION
@@ -415,10 +415,10 @@ function iterate_scan(object, summary, form, scanObject, isRoot, getEntry)
     return true
 end
 
----@class wintermourn.taxon.Tag
+---@class Taxon.Tag
 local _tag = {
     key = '',
-    ---@type wintermourn.taxon.DataType
+    ---@type Taxon.DataType
     type = 'Item',
     values = {by_index = {}, by_value = {}, removed_values = {}}
 }
@@ -476,9 +476,9 @@ function _tag:iterate_keys()
     end
 end
 
----@param data_type wintermourn.taxon.DataType
+---@param data_type Taxon.DataType
 ---@param tag_name string
----@return wintermourn.taxon.Tag
+---@return Taxon.Tag
 function carcass.get_tag(data_type, tag_name)
     return taxon.data[data_type] and taxon.data[data_type][tag_name]
 end
@@ -832,4 +832,4 @@ return setmetatable({}, {
     __newindex = function(_self, idx, _v)
         print(string.format ("attempt to insert index %s into taxon shell", idx))
     end
-}) --[[@as wintermourn.taxon.Carcass]]
+}) --[[@as Taxon.Carcass]]

@@ -9,7 +9,7 @@ local __Guid = luanet.import_type "System.Guid"
 if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlace._VERSION < INTERLACEVERSION then
     _G.wintermourn = _G.wintermourn or {}
 
-    ---@class wintermourn.interlace.ModHandle
+    ---@class Interlace.ModHandle
     local modHandle = {
         uuid = "",
         namespace = "",
@@ -19,7 +19,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
         header          = nil
     }
 
-    ---@class (partial) wintermourn.interlace.Carcass
+    ---@class (partial) Interlace.Carcass
     local carcass = {}
     ---@diagnostic disable-next-line: unnecessary-if
     if _G.wintermourn.interlace then
@@ -100,7 +100,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
         return gameHeader
     end
 
-    ---@return wintermourn.interlace.ModHandle
+    ---@return Interlace.ModHandle
     local function makeModHandleWithHeader(modHeader)
         if modHeader == gameHeader then return gameHandle end
         if type(modHeader) == 'table' then
@@ -146,7 +146,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
 
 --#region Dependency Testing
     
-    ---@class wintermourn.interlace.DependencyBuilder.TestInfo
+    ---@class Interlace.DependencyBuilder.TestInfo
     local dependencyTestInfo = {
         current_layer = 0,
         passed_layers = 0,
@@ -158,7 +158,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
     dependencyTestInfo.__index = dependencyTestInfo
     function dependencyTestInfo:stop_test() self.should_continue = false end
 
-    ---@class wintermourn.interlace.DependencyBuilder
+    ---@class Interlace.DependencyBuilder
     local dependencyBuilder = {
         _layers = {},
         _working_conditions = { has_conditions = false }
@@ -256,7 +256,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
         end
         return self
     end
-    ---@param callback fun(info: wintermourn.interlace.DependencyBuilder.TestInfo)
+    ---@param callback fun(info: Interlace.DependencyBuilder.TestInfo)
     function dependencyBuilder:if_valid(callback)
         local ptr
         if self._working_conditions.has_conditions then
@@ -274,7 +274,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
         end
         return self
     end
-    ---@param callback fun(info: wintermourn.interlace.DependencyBuilder.TestInfo)
+    ---@param callback fun(info: Interlace.DependencyBuilder.TestInfo)
     function dependencyBuilder:if_invalid(callback)
         local ptr
         if self._working_conditions.has_conditions then
@@ -292,8 +292,8 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
         end
         return self
     end
-    ---@param valid_callback fun(info: wintermourn.interlace.DependencyBuilder.TestInfo)
-    ---@param invalid_callback fun(info: wintermourn.interlace.DependencyBuilder.TestInfo)
+    ---@param valid_callback fun(info: Interlace.DependencyBuilder.TestInfo)
+    ---@param invalid_callback fun(info: Interlace.DependencyBuilder.TestInfo)
     function dependencyBuilder:on_result(valid_callback, invalid_callback)
         local ptr
         if self._working_conditions.has_conditions then
@@ -316,7 +316,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
         return self
     end
     function dependencyBuilder:test()
-        ---@type wintermourn.interlace.DependencyBuilder.TestInfo
+        ---@type Interlace.DependencyBuilder.TestInfo
         local testInfo = setmetatable({}, dependencyTestInfo)
         local handles = {}
         local function getHandle(header)
@@ -472,4 +472,4 @@ return setmetatable({}, {
     __newindex = function(self, idx, _v)
         print(string.format ("attempt to insert index %s into interlace shell", idx))
     end
-}) --[[@as wintermourn.interlace.Carcass]]
+}) --[[@as Interlace.Carcass]]
