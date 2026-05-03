@@ -815,7 +815,7 @@ function carcass.rebuild(force)
     ---@diagnostic disable-next-line: undefined-field
     RogueEssence.DiagManager.Instance.LoadMsg = prevMessage
     local span = __Environment.TickCount64 - startedAt
-    print(('[taxon] Tag rebuild took around %dms (%02fs)'):format(span, span/1000))
+    print(('[taxon] Tag rebuild took around %dms (%.2fs)'):format(span, span/1000))
 end
 if first_init then carcass.rebuild() end
 
