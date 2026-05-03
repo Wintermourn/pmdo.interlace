@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.32
+local TAXONVERSION = 0.33
 
 local IO = luanet.namespace 'System.IO'
 
