@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.3
+local TAXONVERSION = 0.31
 
 local IO = luanet.namespace 'System.IO'
 
@@ -232,12 +232,11 @@ taxon.scan_methods['contains'] = function (data, scan_info)
             if data.Length == 0 then return false end
             if val then
                 if type(data[0]) ~= 'userdata' then return false end -- todo
-                if type(val) == 'string' then
-                    print 'c'
-                    for entry in luanet.each(data) do
-                        ty = entry:GetType()
-                        if ty == __Type.GetType(val) then return true end
-                    end
+                if type(val) ~= 'string' then return false end
+                local goal = __Type.GetType(val)
+                for entry in luanet.each(data) do
+                    ty = entry:GetType()
+                    if ty == goal then return true end
                 end
             end
         elseif ty.IsGenericType and ty:GetGenericTypeDefinition() == type_List then
@@ -245,9 +244,10 @@ taxon.scan_methods['contains'] = function (data, scan_info)
             if val then
                 if type(data[0]) ~= 'userdata' then return false end -- todo
                 if type(val) ~= 'string' then return false end
+                local goal = __Type.GetType(val)
                 for i = 0, data.Count - 1 do
                     ty = data[i]:GetType()
-                    if ty == __Type.GetType(val) then return true end
+                    if ty == goal then return true end
                 end
             end
         end
