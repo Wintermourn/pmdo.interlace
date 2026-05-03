@@ -66,7 +66,6 @@ else
     first_init = true
     taxon = {
         _VERSION = TAXONVERSION,
-        cache_path_format = '%s\000%s',
         constants = {
             tables = {
                 no_property = {},
