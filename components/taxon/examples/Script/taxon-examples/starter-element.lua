@@ -42,7 +42,7 @@ if not IO.File.Exists(element_path) then
         )
 end
 
-local taxon = require 'components.taxon.taxon'
+local taxon = require 'taxon-examples.taxon'
 print(tostring(taxon.get_tag('Monster', 'taxon-examples:starter/'.. element)))
 -- print all monster IDs in the tag
 for entry in taxon.get_tag('Monster', 'taxon-examples:starter/'.. element):iterate_keys() do
