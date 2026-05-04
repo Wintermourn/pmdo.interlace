@@ -392,7 +392,6 @@ function iterate_scan(object, summary, form, scanObject, isRoot, getEntry)
             for _,word in ipairs(rule.path) do
                 if currentTarget == nil then return false end
                 currentTarget, objProp = get_property(currentTarget, word)
-                if rule.target_type == 'form' then print(word, tostring(currentTarget)) end
                 if objProp == NOPROP then return false end
             end
         end
