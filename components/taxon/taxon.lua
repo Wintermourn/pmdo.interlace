@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.33
+local TAXONVERSION = 0.34
 
 local IO = luanet.namespace 'System.IO'
 
@@ -385,14 +385,14 @@ function iterate_scan(object, summary, form, scanObject, isRoot, getEntry)
     for _, rule in ipairs(compiled) do
         if isRoot then
             if rule.target_type == 'summary' then currentTarget = summary
-            elseif rule.target_type == 'form' then currentTarget = form
+            elseif rule.target_type == 'form' then currentTarget = form;
             else currentTarget = object or getEntry() end
         end
-        currentTarget = object
         if #rule.path > 0 then
             for _,word in ipairs(rule.path) do
                 if currentTarget == nil then return false end
                 currentTarget, objProp = get_property(currentTarget, word)
+                if rule.target_type == 'form' then print(word, tostring(currentTarget)) end
                 if objProp == NOPROP then return false end
             end
         end
@@ -531,9 +531,9 @@ end
 
 local function load_tag_files(path, base_path, tag_cache, type, scan_cache)
     if not IO.Directory.Exists(path) then return end
-    for file in luanet.each(IO.Directory.GetFiles(path)) do
+    for file in luanet.each(IO.Directory.GetFileSystemEntries(path)) do
         if IO.Directory.Exists(file) then
-            load_tag_files(file, path, tag_cache)
+            load_tag_files(file, path, tag_cache, type, scan_cache)
         elseif IO.Path.GetExtension(file) == '.json' then
             local tagName = IO.Path.GetRelativePath(base_path, file):sub(1,-6):lower()
             local o = tag_cache[tagName] and tag_cache[tagName].values or {by_index = {}, by_value = {}, removed_values = {}}
