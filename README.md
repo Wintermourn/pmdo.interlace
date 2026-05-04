@@ -9,5 +9,5 @@ Interlace's core file is designed to help with optional dependency testing, prov
 - Usage: [todo]
 ### Taxon [(script file)](components/taxon/taxon.lua)
 Taxon provides a tagging system for various data types, allowing the creation of ID groups.
-- Script Usage: [todo]
-- Tagging: [todo]
+- Script Usage: [wiki](../../wiki/Taxon%3A-Usage-in-Scripts)
+- Tagging: [wiki](../../wiki/Taxon:-Tagging)
