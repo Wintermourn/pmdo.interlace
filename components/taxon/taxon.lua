@@ -253,6 +253,18 @@ taxon.scan_methods['contains'] = function (data, scan_info)
     end
 end
 
+taxon.scan_methods['not_empty'] = function (data)
+    if type(data) == 'userdata' then
+        local ty = data:GetType()
+        if ty.IsArray then
+            return data.Length > 0
+        elseif ty.IsGenericType and ty:GetGenericTypeDefinition() == type_List then
+            return data.Count > 0
+        end
+    elseif type(data) == 'string' then return data == ''
+    end
+end
+
 local scan_object_cache = {}
 ---@type fun(object: unknown, summary: unknown?, form: unknown?, scanObject: unknown, isRoot: boolean, getEntry: (fun(): unknown)?): boolean
 local iterate_scan
