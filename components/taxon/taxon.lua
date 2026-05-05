@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.4
+local TAXONVERSION = 0.41
 
 local IO = luanet.namespace 'System.IO'
 
@@ -357,6 +357,14 @@ local function run_test(test_name, object_value, test_info)
     return method.callback(object_value, test_info)
 end
 
+local function print_warning(text)
+    if DiagManager then 
+        DiagManager.Instance:LogInfo('[taxon](warn) ' .. text) 
+    else
+        print('[taxon](warn) ' .. text)
+    end
+end
+
 local function check_required_properties(test_name, native_value, required_props, pfx)
     local ty, should_return_false
     if pfx then
@@ -368,19 +376,19 @@ local function check_required_properties(test_name, native_value, required_props
         if type(k) == 'table' then
             if k.type == 'array' and k.values then
                 if getmetatable(native_value[i]) ~= array_mt then
-                    print(('[taxon] value of property "%s" on test "%s" should be %s[] but instead is a %s.'):format(pfx .. i, test_name, k.values, ty))
+                    print_warning(('value of property "%s" on test "%s" should be %s[] but instead is a %s.'):format(pfx .. i, test_name, k.values, ty))
                     should_return_false = true
                 else
                     ty = type(native_value[i][1])
                     if ty ~= k.values then
-                        print(('[taxon] value of property "%s" on test "%s" should be %s[] but instead is a %s[].'):format(pfx .. i, test_name, k.values, ty))
+                        print_warning(('value of property "%s" on test "%s" should be %s[] but instead is a %s[].'):format(pfx .. i, test_name, k.values, ty))
                         should_return_false = true
                     end
                 end
             else
                 ty = type(native_value[i])
                 if ty ~= 'table' then
-                    print(('[taxon] value of property "%s" on test "%s" should be a table but instead is a %s.'):format(pfx .. i, test_name, ty))
+                    print_warning(('value of property "%s" on test "%s" should be a table but instead is a %s.'):format(pfx .. i, test_name, ty))
                     should_return_false = true
                 end
                 if not check_required_properties(test_name, native_value[i], k, pfx .. i) then should_return_false = true end
@@ -388,7 +396,7 @@ local function check_required_properties(test_name, native_value, required_props
         elseif type(k) == 'string' then
             ty = type(native_value[i])
             if ty ~= k then
-                print(('[taxon] value of property "%s" on test "%s" should be a %s but instead is a %s.'):format(pfx .. i, test_name, k, ty))
+                print_warning(('value of property "%s" on test "%s" should be a %s but instead is a %s.'):format(pfx .. i, test_name, k, ty))
                 should_return_false = true
             end
         end
