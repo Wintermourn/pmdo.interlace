@@ -1,0 +1,22 @@
+{
+    "scans": [
+        {
+            "Object.UseEvent.OnHits": {
+                "type": "contains",
+                "class": "PMDC.Dungeon.VitaGummiEvent, PMDC"
+            }
+        },
+        {
+            "Object.UseEvent.OnHits": {
+                "type": "contains",
+                "class": "PMDC.Dungeon.RestoreBellyEvent, PMDC",
+                "value": {
+                    "Heal": {
+                        "type": "greater_than",
+                        "value": 0
+                    }
+                }
+            }
+        }
+    ]
+}

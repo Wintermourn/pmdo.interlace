@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.41
+local TAXONVERSION = 0.5
 
 local IO = luanet.namespace 'System.IO'
 
@@ -139,14 +139,17 @@ local type_IEnumerable__JProperty = ctype(import_type (('System.Collections.Gene
     type_JProperty.FullName,
     type_JProperty.Assembly:GetName().Name
 )))
-local method_GetEnumerator = type_IEnumerable__JProperty:GetMethod("GetEnumerator")
+local method_GetEnumerator__JProperty = type_IEnumerable__JProperty:GetMethod("GetEnumerator")
 local type_IEnumerator = ctype(import_type 'System.Collections.IEnumerator')
 local method_MoveNext = type_IEnumerator:GetMethod("MoveNext")
 local type_IEnumerator__JProperty = ctype(import_type (('System.Collections.Generic.IEnumerator`1[[%s,%s]]'):format(
     type_JProperty.FullName,
     type_JProperty.Assembly:GetName().Name
 )))
-local method_get_Current = type_IEnumerator__JProperty:GetMethod 'get_Current'
+local method_get_Current__JProperty = type_IEnumerator__JProperty:GetMethod 'get_Current'
+local type_IEnumerable = ctype(import_type 'System.Collections.IEnumerable')
+local method_GetEnumerator = type_IEnumerable:GetMethod("GetEnumerator")
+local method_get_Current = type_IEnumerator:GetMethod 'get_Current'
 
 local compatible_types = {
     Byte = {[__JTokenType.Integer] = true},
@@ -171,6 +174,10 @@ local jtype_conversions = {
     [__JTokenType.Boolean] = type_Boolean,
     [__JTokenType.String] = type_String
 }
+
+local scan_object_cache = {}
+---@type fun(object: unknown, summary: unknown?, form: unknown?, scanObject: unknown, isRoot: boolean, getEntry: (fun(): unknown)?): boolean
+local iterate_scan
 
 local function get_property(object, propertyName)
     local type = object:GetType()
@@ -208,10 +215,12 @@ end
 
 ---@param required_properties Taxon.RequiredProperties?
 ---@param fn fun(data: any, scan_info: unknown): boolean
-function carcass.create_scan_method(type_name, required_properties, fn)
+---@param continued_compiles string[]?
+function carcass.create_scan_method(type_name, required_properties, fn, continued_compiles)
     taxon.scan_methods[type_name] = {
         required_properties = required_properties,
-        callback = fn
+        callback = fn,
+        continued_compiles = continued_compiles
     }
 end
 
@@ -245,41 +254,117 @@ carcass.create_scan_method(
     end
 )
 
+carcass.create_scan_method(
+    'greater_than',
+    { value = 'number' },
+    function (data, scan_info)
+        if type(data) ~= 'number' then return false end
+        return data > scan_info.value
+    end
+)
+
+carcass.create_scan_method(
+    'less_than',
+    { value = 'number' },
+    function (data, scan_info)
+        if type(data) ~= 'number' then return false end
+        return data < scan_info.value
+    end
+)
+
+carcass.create_scan_method(
+    'not',
+    nil,
+    function (data, scan_info)
+        local val = scan_info.value
+        if not val then return data == false end
+        local ta, tb = type(data), type(val)
+        if ta ~= tb then return true end
+        return data ~= val
+    end
+)
+
 local type_List = import_type 'System.Type' .GetType 'System.Collections.Generic.List`1'
+local type_PriorityList = import_type 'System.Type' .GetType 'RogueElements.PriorityList`1, RogueElements'
 carcass.create_scan_method(
     'contains',
     nil,
     function (data, scan_info)
-        local val = scan_info.class
+        local cls = scan_info.class
+        local val = scan_info.value
         if type(data) == 'userdata' then
             local ty = data:GetType()
             if not ty then return false end
             if ty.IsArray then
                 if data.Length == 0 then return false end
-                if val then
+                if cls then
                     if type(data[0]) ~= 'userdata' then return false end -- todo
-                    if type(val) ~= 'string' then return false end
-                    local goal = __Type.GetType(val)
+                    if type(cls) ~= 'string' then return false end
+                    local goal = __Type.GetType(cls)
                     for entry in luanet.each(data) do
                         ty = entry:GetType()
-                        if ty == goal then return true end
+                        print(ty)
+                        if ty == goal then
+                            if val then
+                                if val then
+                                    if iterate_scan(entry, nil, nil, val, false, nil) then return true end
+                                end
+                            end
+                            return true
+                        end
                     end
                 end
-            elseif ty.IsGenericType and ty:GetGenericTypeDefinition() == type_List then
-                if data.Count == 0 then return false end
                 if val then
-                    if type(data[0]) ~= 'userdata' then return false end -- todo
-                    if type(val) ~= 'string' then return false end
-                    local goal = __Type.GetType(val)
-                    for i = 0, data.Count - 1 do
-                        ty = data[i]:GetType()
-                        if ty == goal then return true end
+                    if iterate_scan(data, nil, nil, val, false, nil) then return true end
+                end
+            elseif ty.IsGenericType then
+                local gty = ty:GetGenericTypeDefinition()
+                if gty == type_List then
+                    if data.Count == 0 then return false end
+                    if cls then
+                        if type(data[0]) ~= 'userdata' then return false end -- todo
+                        if type(cls) ~= 'string' then return false end
+                        local goal = __Type.GetType(cls)
+                        for i = 0, data.Count - 1 do
+                            ty = data[i]:GetType()
+                            if ty == goal then
+                                if val then
+                                    if iterate_scan(data[i], nil, nil, val, false, nil) then return true end
+                                end
+                                return true
+                            end
+                        end
+                    end
+                    if val then
+                        if iterate_scan(data, nil, nil, val, false, nil) then return true end
+                    end
+                elseif gty == type_PriorityList then
+                    if data.Count == 0 then return false end
+                    if cls then
+                        if type(cls) ~= 'string' then return false end
+                        local goal = __Type.GetType(cls)
+                        local enumerator = method_GetEnumerator:Invoke(data, nil)
+                        local entry
+                        while method_MoveNext:Invoke(enumerator, nil) do
+                            entry = method_get_Current:Invoke(enumerator, nil).Value
+                            ty = entry:GetType()
+                            if ty == goal then
+                                if val then
+                                    if iterate_scan(entry, nil, nil, val, false, nil) then return true end
+                                end
+                                return true
+                            end
+                        end
+                    end
+                    if val then
+                        if iterate_scan(data, nil, nil, val, false, nil) then return true end
                     end
                 end
             end
         end
         return false
-    end
+    end,
+    { "value" }
 )
 
 carcass.create_scan_method(
@@ -300,10 +385,6 @@ carcass.create_scan_method(
     end
 )
 
-local scan_object_cache = {}
----@type fun(object: unknown, summary: unknown?, form: unknown?, scanObject: unknown, isRoot: boolean, getEntry: (fun(): unknown)?): boolean
-local iterate_scan
-
 --#region njson
 local array_mt, null_value = taxon.constants.tables.array_mt, taxon.constants.null
 ---@type fun(val: any): any
@@ -312,10 +393,10 @@ local deobjectifications = {
     [__JTokenType.Object] = function(val)
         local out = {}
 
-        local enumerator = method_GetEnumerator:Invoke(val:Properties(), nil)
+        local enumerator = method_GetEnumerator__JProperty:Invoke(val:Properties(), nil)
         local prop
         while method_MoveNext:Invoke(enumerator, nil) do
-            prop = method_get_Current:Invoke(enumerator, nil)--enumerator.Current
+            prop = method_get_Current__JProperty:Invoke(enumerator, nil)--enumerator.Current
             out[prop.Name] = deobjectify(method_get_Value:Invoke(prop, nil))
         end
 
@@ -406,12 +487,12 @@ end
 
 local function compile_scan(scanObject, isRoot)
     local compiled = {}
-    local enumerator = method_GetEnumerator:Invoke(scanObject:Properties(), nil)
+    local enumerator = method_GetEnumerator__JProperty:Invoke(scanObject:Properties(), nil)
 
     local prop, propName, value, path, nativeValue, targetType
     local test_func, vType, jtc
     while method_MoveNext:Invoke(enumerator, nil) do
-        prop        = method_get_Current:Invoke(enumerator, nil)
+        prop        = method_get_Current__JProperty:Invoke(enumerator, nil)
         propName    = prop.Name
         value       = method_get_Value:Invoke(prop, nil)
 
@@ -453,6 +534,15 @@ local function compile_scan(scanObject, isRoot)
                 if test then
                     if test.required_properties then
                         has_bad_args = check_required_properties(testType, nativeValue, test.required_properties)
+                    end
+                    if test.continued_compiles then
+                        print 'cc'
+                        for _,k in ipairs(test.continued_compiles) do
+                            if value[k] then
+                                print(k, type(value[k]))
+                                nativeValue[k] = value[k]
+                            end
+                        end 
                     end
                 else
                     print (('[taxon] test type %s does not currently exist and may cause issues'):format(testType))
