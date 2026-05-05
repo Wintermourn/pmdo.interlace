@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.34
+local TAXONVERSION = 0.4
 
 local IO = luanet.namespace 'System.IO'
 
@@ -62,6 +62,7 @@ if taxon then
     taxon._VERSION = TAXONVERSION
     taxon.carcass = carcass
     taxon.bubbleup = bubbleup
+    if taxon._VERSION < 0.4 then taxon.scan_methods = {} end
 else
     first_init = true
     taxon = {
@@ -203,67 +204,101 @@ local function get_property(object, propertyName)
     return out, propType
 end
 
-taxon.scan_methods['string.starts_with'] = function (data, scan_info)
-    if type(data) ~= 'string' then return false end
-    local prefix = scan_info.value
-    return data:sub(1,#prefix) == prefix
+---@alias Taxon.RequiredProperties {[string]: type|Taxon.RequiredProperties|{type: "array",values:type}}
+
+---@param required_properties Taxon.RequiredProperties?
+---@param fn fun(data: any, scan_info: unknown): boolean
+function carcass.create_scan_method(type_name, required_properties, fn)
+    taxon.scan_methods[type_name] = {
+        required_properties = required_properties,
+        callback = fn
+    }
 end
 
-taxon.scan_methods['string.ends_with'] = function (data, scan_info)
-    if type(data) ~= 'string' then return false end
-    local suffix = scan_info.value
-    return data:sub(-#suffix) == suffix
-end
+carcass.create_scan_method(
+    'string.starts_with',
+    { value = 'string' },
+    function(data, scan_info)
+        if type(data) ~= 'string' then return false end
+        local prefix = scan_info.value
+        return data:sub(1,#prefix) == prefix
+    end
+)
 
-taxon.scan_methods['string.contains'] = function (data, scan_info)
-    if type(data) ~= 'string' then return false end
-    local suffix = scan_info.value
-    return data:find(suffix)
-end
+carcass.create_scan_method(
+    'string.ends_with',
+    { value = 'string' },
+    function (data, scan_info)
+        if type(data) ~= 'string' then return false end
+        local suffix = scan_info.value
+        return data:sub(-#suffix) == suffix
+    end
+)
+
+carcass.create_scan_method(
+    'string.contains',
+    { value = 'string' },
+    function (data, scan_info)
+        if type(data) ~= 'string' then return false end
+        local suffix = scan_info.value
+        return data:find(suffix) ~= nil
+    end
+)
 
 local type_List = import_type 'System.Type' .GetType 'System.Collections.Generic.List`1'
-taxon.scan_methods['contains'] = function (data, scan_info)
-    local val = scan_info.class
-    if type(data) == 'userdata' then
-        local ty = data:GetType()
-        if not ty then return false end
-        if ty.IsArray then
-            if data.Length == 0 then return false end
-            if val then
-                if type(data[0]) ~= 'userdata' then return false end -- todo
-                if type(val) ~= 'string' then return false end
-                local goal = __Type.GetType(val)
-                for entry in luanet.each(data) do
-                    ty = entry:GetType()
-                    if ty == goal then return true end
+carcass.create_scan_method(
+    'contains',
+    nil,
+    function (data, scan_info)
+        local val = scan_info.class
+        if type(data) == 'userdata' then
+            local ty = data:GetType()
+            if not ty then return false end
+            if ty.IsArray then
+                if data.Length == 0 then return false end
+                if val then
+                    if type(data[0]) ~= 'userdata' then return false end -- todo
+                    if type(val) ~= 'string' then return false end
+                    local goal = __Type.GetType(val)
+                    for entry in luanet.each(data) do
+                        ty = entry:GetType()
+                        if ty == goal then return true end
+                    end
                 end
-            end
-        elseif ty.IsGenericType and ty:GetGenericTypeDefinition() == type_List then
-            if data.Count == 0 then return false end
-            if val then
-                if type(data[0]) ~= 'userdata' then return false end -- todo
-                if type(val) ~= 'string' then return false end
-                local goal = __Type.GetType(val)
-                for i = 0, data.Count - 1 do
-                    ty = data[i]:GetType()
-                    if ty == goal then return true end
+            elseif ty.IsGenericType and ty:GetGenericTypeDefinition() == type_List then
+                if data.Count == 0 then return false end
+                if val then
+                    if type(data[0]) ~= 'userdata' then return false end -- todo
+                    if type(val) ~= 'string' then return false end
+                    local goal = __Type.GetType(val)
+                    for i = 0, data.Count - 1 do
+                        ty = data[i]:GetType()
+                        if ty == goal then return true end
+                    end
                 end
             end
         end
+        return false
     end
-end
+)
 
-taxon.scan_methods['not_empty'] = function (data)
-    if type(data) == 'userdata' then
-        local ty = data:GetType()
-        if ty.IsArray then
-            return data.Length > 0
-        elseif ty.IsGenericType and ty:GetGenericTypeDefinition() == type_List then
-            return data.Count > 0
+carcass.create_scan_method(
+    'not_empty',
+    nil,
+    function (data)
+        if type(data) == 'userdata' then
+            local ty = data:GetType()
+            if ty.IsArray then
+                return data.Length > 0
+            elseif ty.IsGenericType and ty:GetGenericTypeDefinition() == type_List then
+                return data.Count > 0
+            end
+            return false
+        elseif type(data) == 'string' then return data == ''
         end
-    elseif type(data) == 'string' then return data == ''
+        return type(data) ~= 'nil'
     end
-end
+)
 
 local scan_object_cache = {}
 ---@type fun(object: unknown, summary: unknown?, form: unknown?, scanObject: unknown, isRoot: boolean, getEntry: (fun(): unknown)?): boolean
@@ -319,7 +354,46 @@ end
 local function run_test(test_name, object_value, test_info)
     local method = taxon.scan_methods[test_name]
     if not method then return false end
-    return method(object_value, test_info)
+    return method.callback(object_value, test_info)
+end
+
+local function check_required_properties(test_name, native_value, required_props, pfx)
+    local ty, should_return_false
+    if pfx then
+        pfx = pfx:sub(-1) == '.' and pfx or (pfx .. '.')
+    else
+        pfx = ''
+    end
+    for i,k in pairs(required_props) do
+        if type(k) == 'table' then
+            if k.type == 'array' and k.values then
+                if getmetatable(native_value[i]) ~= array_mt then
+                    print(('[taxon] value of property "%s" on test "%s" should be %s[] but instead is a %s.'):format(pfx .. i, test_name, k.values, ty))
+                    should_return_false = true
+                else
+                    ty = type(native_value[i][1])
+                    if ty ~= k.values then
+                        print(('[taxon] value of property "%s" on test "%s" should be %s[] but instead is a %s[].'):format(pfx .. i, test_name, k.values, ty))
+                        should_return_false = true
+                    end
+                end
+            else
+                ty = type(native_value[i])
+                if ty ~= 'table' then
+                    print(('[taxon] value of property "%s" on test "%s" should be a table but instead is a %s.'):format(pfx .. i, test_name, ty))
+                    should_return_false = true
+                end
+                if not check_required_properties(test_name, native_value[i], k, pfx .. i) then should_return_false = true end
+            end
+        elseif type(k) == 'string' then
+            ty = type(native_value[i])
+            if ty ~= k then
+                print(('[taxon] value of property "%s" on test "%s" should be a %s but instead is a %s.'):format(pfx .. i, test_name, k, ty))
+                should_return_false = true
+            end
+        end
+    end
+    return should_return_false == true
 end
 
 local function compile_scan(scanObject, isRoot)
@@ -366,7 +440,16 @@ local function compile_scan(scanObject, isRoot)
             nativeValue = deobjectify(value)
             local testType = nativeValue.type
             if testType and type(testType) == 'string' then
-                test_func = {is_test = true, method_name = testType, test_info = nativeValue}
+                local test = taxon.scan_methods[testType]
+                local has_bad_args
+                if test then
+                    if test.required_properties then
+                        has_bad_args = check_required_properties(testType, nativeValue, test.required_properties)
+                    end
+                else
+                    print (('[taxon] test type %s does not currently exist and may cause issues'):format(testType))
+                end
+                test_func = {is_test = true, method_name = testType, test_info = nativeValue, has_bad_args = has_bad_args}
             else
                 test_func = {test_info = value}
             end
@@ -410,7 +493,7 @@ function iterate_scan(object, summary, form, scanObject, isRoot, getEntry)
 
         test = rule.test
         if test.is_test then
-            if not run_test(test.method_name, currentTarget, test.test_info) then return false end
+            if test.has_bad_args or not run_test(test.method_name, currentTarget, test.test_info) then return false end
         elseif test.is_primitive then
             if objProp then
                 compatibleTypes = compatible_types[objProp.Name]
