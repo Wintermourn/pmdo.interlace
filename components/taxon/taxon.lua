@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.5
+local TAXONVERSION = 0.51
 
 local IO = luanet.namespace 'System.IO'
 
@@ -215,12 +215,12 @@ end
 
 ---@param required_properties Taxon.RequiredProperties?
 ---@param fn fun(data: any, scan_info: unknown): boolean
----@param continued_compiles string[]?
-function carcass.create_scan_method(type_name, required_properties, fn, continued_compiles)
+---@param retained_properties string[]?
+function carcass.create_scan_method(type_name, required_properties, fn, retained_properties)
     taxon.scan_methods[type_name] = {
         required_properties = required_properties,
         callback = fn,
-        continued_compiles = continued_compiles
+        retain_properties = retained_properties
     }
 end
 
@@ -535,9 +535,9 @@ local function compile_scan(scanObject, isRoot)
                     if test.required_properties then
                         has_bad_args = check_required_properties(testType, nativeValue, test.required_properties)
                     end
-                    if test.continued_compiles then
+                    if test.retain_properties then
                         print 'cc'
-                        for _,k in ipairs(test.continued_compiles) do
+                        for _,k in ipairs(test.retain_properties) do
                             if value[k] then
                                 print(k, type(value[k]))
                                 nativeValue[k] = value[k]
