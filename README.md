@@ -6,7 +6,7 @@ It is recommended to use [EmmyLua](https://github.com/EmmyLua) or another Lua la
 ## Components
 ### Core [(script file)](library/interlace.lua)
 Interlace's core file is designed to help with optional dependency testing, providing a layered system with callbacks as well as functions to check for downloaded mods, game version, and the active Quest.
-- Usage: [todo]
+- Usage: [wiki: todo] [examples](library/examples/Script/interlace-examples)
 ### Taxon [(script file)](components/taxon/taxon.lua)
 Taxon provides a tagging system for various data types, allowing the creation of ID groups.
 - Script Usage: [wiki](../../wiki/Taxon%3A-Usage-in-Scripts) [examples](components/taxon/examples/Script/taxon-examples)

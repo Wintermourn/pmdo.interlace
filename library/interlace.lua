@@ -1,5 +1,5 @@
 ---@diagnostic disable: duplicate-type, duplicate-set-field, unnecessary-if
-local INTERLACEVERSION = 0.1
+local INTERLACEVERSION = 0.11
 
 local __Version = luanet.import_type "System.Version"
 local __Guid = luanet.import_type "System.Guid"
@@ -422,7 +422,13 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
     end
     --- Returns the current quest's mod header if the UUID provided matches
     function carcass.is_active_quest_of_uuid(uuid)
-        return RogueEssence.PathMod.Quest == _G.wintermourn.interlace.data.mods_list.by_uuid[uuid]
+        local success
+        if type(uuid) == "string" then
+            success, uuid = pcall(__Guid, uuid)
+            if not success then return nil end
+            uuid = uuid:ToString()
+        end
+        return RogueEssence.PathMod.Quest.UUID == uuid
     end
     function carcass.get_mod_by_uuid(uuid)
         local success
@@ -441,7 +447,6 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
             if not success then return nil end
         end
         return RogueEssence.PathMod.GetModFromUuid(uuid)
-        --return RogueEssence.PathMod.GetModFromUuid(id)
     end
 
     function carcass.dependency_test()
