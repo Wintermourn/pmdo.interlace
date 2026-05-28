@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.51
+local TAXONVERSION = 0.52
 
 local IO = luanet.namespace 'System.IO'
 
@@ -782,6 +782,7 @@ local function load_tag_files(path, base_path, tag_cache, type, scan_cache)
 end
 
 function carcass.rebuild(force)
+
     local cacheDir = IO.Path.Combine(RogueEssence.PathMod.APP_PATH, 'SAVE', 'TAXON_CACHE')
     if not IO.Directory.Exists(cacheDir) then IO.Directory.CreateDirectory(cacheDir) end
 
@@ -886,6 +887,8 @@ function carcass.rebuild(force)
             end
         else
             RogueEssence.DiagManager.Instance.LoadMsg = "Generating Tags - ".. category;
+            _DATA:LoadIndex(__DataType[category]) -- ensure indices are reloaded before we generate tags -- previous load may have added or removed data, and we don't want errors
+
             local function makeTag(cache, tag_name)
                 local tag_content = {by_index = {}, by_value = {}, removed_values = {}}
                 local tag = setmetatable({key = tag_name, type = category, values = tag_content, is_default_tag = true}, _tag)
@@ -910,7 +913,7 @@ function carcass.rebuild(force)
 
             local entry, summary, o, getEntry
             for id in luanet.each(_DATA.DataIndices[__DataType[category]]:GetOrderedKeys(true)) do
-                getEntry = function() entry = entry or temp[2](_DATA, id); return entry end
+                getEntry = function() local s,v = pcall(temp[2], _DATA, id) if s then entry = entry or v; return v end end
                 summary = _DATA.DataIndices[__DataType[category]]:Get(id)
                 if summary.Released then
                     addToTag(releaseTag, id)
@@ -922,41 +925,45 @@ function carcass.rebuild(force)
                 elseif category == 'Monster' then
                     getEntry()
                     local idx = 0
-                    for form in luanet.each(entry.Forms) do
-                        if not form.Temporary then
-                            addToTag(elementTags[form.Element1], id ..'/'.. idx)
-                            if form.Element2 ~= 'none' then addToTag(elementTags[form.Element2], id ..'/'.. idx) end
+                    if entry then
+                        for form in luanet.each(entry.Forms) do
+                            if not form.Temporary then
+                                addToTag(elementTags[form.Element1], id ..'/'.. idx)
+                                if form.Element2 ~= 'none' then addToTag(elementTags[form.Element2], id ..'/'.. idx) end
+                            end
+                            idx = idx + 1
                         end
-                        idx = idx + 1
                     end
                 end
                 for _, scanData in ipairs(pendingScans) do
                     o = scanData.tag_ref
                     if not o.by_value[id] and not o.removed_values[id] then
-                        entry = entry or temp[2](_DATA, id)
-                        for test in luanet.each(scanData.scans) do
-                            if test.Type == __JTokenType.Object then
-                                if category == 'Monster' then
-                                    local idx = 0
-                                    for form in luanet.each(entry.Forms) do
-                                        if not o.include_temporary_forms or not form.Temporary then
-                                            if iterate_scan(entry, summary, form, test, true, getEntry) then
-                                                table.insert(o.by_index, id ..'/'.. idx)
-                                                o.by_value[id] = #o.by_index
-                                                break
+                        getEntry()
+                        if entry then
+                            for test in luanet.each(scanData.scans) do
+                                if test.Type == __JTokenType.Object then
+                                    if category == 'Monster' then
+                                        local idx = 0
+                                        for form in luanet.each(entry.Forms) do
+                                            if not o.include_temporary_forms or not form.Temporary then
+                                                if iterate_scan(entry, summary, form, test, true, getEntry) then
+                                                    table.insert(o.by_index, id ..'/'.. idx)
+                                                    o.by_value[id] = #o.by_index
+                                                    break
+                                                end
                                             end
+                                            idx = idx + 1
                                         end
-                                        idx = idx + 1
+                                    else
+                                        if iterate_scan(entry, summary, nil, test, true, getEntry) then
+                                            table.insert(o.by_index, id)
+                                            o.by_value[id] = #o.by_index
+                                            break
+                                        end
                                     end
                                 else
-                                    if iterate_scan(entry, summary, nil, test, true, getEntry) then
-                                        table.insert(o.by_index, id)
-                                        o.by_value[id] = #o.by_index
-                                        break
-                                    end
+                                    print("invalid token in scans array")
                                 end
-                            else
-                                print("invalid token in scans array")
                             end
                         end
                     end
