@@ -96,6 +96,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
         header = gameHeader
     }
     --- Returns a fake header filled with game related information, such as version.
+    ---@return RogueEssence.ModHeader
     function carcass.get_game_header()
         return gameHeader
     end
@@ -407,20 +408,24 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
     
 --#endregion Dependency Testing
 
+    ---@return RogueEssence.ModHeader
     function carcass.get_mod_by_namespace(namespace)
         return _G.wintermourn.interlace.data.mods_list.by_namespace[namespace]
         --return RogueEssence.PathMod.GetModFromNamespace(namespace)
     end
-    --- Returns the current quest's mod header, if one is active.
+    ---Returns the current quest's mod header, if one is active.
+    ---@return RogueEssence.ModHeader | false
     function carcass.get_quest_header()
         return RogueEssence.PathMod.Quest ~= RogueEssence.ModHeader.Invalid and RogueEssence.PathMod.Quest
         --return RogueEssence.PathMod.GetModFromNamespace(namespace)
     end
-    --- Returns the current quest's mod header if the namespace provided matches
+    ---Returns the current quest's mod header if the namespace provided matches
+    ---@return RogueEssence.ModHeader
     function carcass.is_active_quest_of_namespace(namespace)
         return RogueEssence.PathMod.Quest.Namespace == namespace
     end
-    --- Returns the current quest's mod header if the UUID provided matches
+    --- Returns true if the current quest's uuid matches.
+    ---@return boolean
     function carcass.is_active_quest_of_uuid(uuid)
         local success
         if type(uuid) == "string" then
@@ -430,6 +435,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
         end
         return RogueEssence.PathMod.Quest.UUID == uuid
     end
+    ---@return RogueEssence.ModHeader?
     function carcass.get_mod_by_uuid(uuid)
         local success
         if type(uuid) == "string" then
@@ -440,6 +446,7 @@ if not _G.wintermourn or not _G.wintermourn.interlace or _G.wintermourn.interlac
         return _G.wintermourn.interlace.data.mods_list.by_uuid[uuid]
         --return RogueEssence.PathMod.GetModFromUuid(id)
     end
+    ---@return RogueEssence.ModHeader?
     function carcass.get_active_mod_by_uuid(uuid)
         local success
         if type(uuid) == "string" then
