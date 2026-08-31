@@ -1,5 +1,5 @@
 ---@diagnostic disable: unnecessary-if
-local TAXONVERSION = 0.54
+local TAXONVERSION = 0.6
 
 local IO = luanet.namespace 'System.IO'
 
@@ -284,8 +284,9 @@ carcass.create_scan_method(
     end
 )
 
-local type_List = import_type 'System.Type' .GetType 'System.Collections.Generic.List`1'
-local type_PriorityList = import_type 'System.Type' .GetType 'RogueElements.PriorityList`1, RogueElements'
+local type_List = __Type .GetType 'System.Collections.Generic.List`1'
+local type_PriorityList = __Type .GetType 'RogueElements.PriorityList`1, RogueElements'
+local type_StateCollection = __Type .GetType 'RogueEssence.Dungeon.StateCollection`1, RogueEssence'
 carcass.create_scan_method(
     'contains',
     nil,
@@ -306,9 +307,7 @@ carcass.create_scan_method(
                         print(ty)
                         if ty == goal then
                             if val then
-                                if val then
-                                    if iterate_scan(entry, nil, nil, val, false, nil) then return true end
-                                end
+                                if iterate_scan(entry, nil, nil, val, false, nil) then return true end
                             end
                             return true
                         end
@@ -358,6 +357,12 @@ carcass.create_scan_method(
                     end
                     if val then
                         if iterate_scan(data, nil, nil, val, false, nil) then return true end
+                    end
+                elseif gty == type_StateCollection then
+                    if data.Count == 0 then return false end
+                    if cls then
+                        local goal = __Type.GetType(cls)
+                        return data:Contains(goal)
                     end
                 end
             end
@@ -536,7 +541,6 @@ local function compile_scan(scanObject, isRoot)
                         has_bad_args = check_required_properties(testType, nativeValue, test.required_properties)
                     end
                     if test.retain_properties then
-                        print 'cc'
                         for _,k in ipairs(test.retain_properties) do
                             if value[k] then
                                 print(k, type(value[k]))
